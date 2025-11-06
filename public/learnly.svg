@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Learnly Tetris">
+  <rect width="256" height="256" fill="#0f172a"/>
+  <!-- Grid -->
+  <g opacity="0.15" stroke="#94a3b8" stroke-width="1">
+    <path d="M16 0v256M32 0v256M48 0v256M64 0v256M80 0v256M96 0v256M112 0v256M128 0v256M144 0v256M160 0v256M176 0v256M192 0v256M208 0v256M224 0v256M240 0v256"/>
+    <path d="M0 16h256M0 32h256M0 48h256M0 64h256M0 80h256M0 96h256M0 112h256M0 128h256M0 144h256M0 160h256M0 176h256M0 192h256M0 208h256M0 224h256M0 240h256"/>
+  </g>
+  <!-- Tetromino motif forming an "L" and hinting at Learnly -->
+  <g>
+    <!-- L piece (orange) -->
+    <rect x="40" y="40" width="32" height="32" fill="#f59e0b"/>
+    <rect x="40" y="72" width="32" height="32" fill="#f59e0b"/>
+    <rect x="40" y="104" width="32" height="32" fill="#f59e0b"/>
+    <rect x="72" y="104" width="32" height="32" fill="#f59e0b"/>
+
+    <!-- T piece (purple) -->
+    <rect x="120" y="72" width="32" height="32" fill="#8b5cf6"/>
+    <rect x="152" y="72" width="32" height="32" fill="#8b5cf6"/>
+    <rect x="184" y="72" width="32" height="32" fill="#8b5cf6"/>
+    <rect x="152" y="104" width="32" height="32" fill="#8b5cf6"/>
+
+    <!-- I piece (cyan) -->
+    <rect x="184" y="136" width="32" height="32" fill="#06b6d4"/>
+    <rect x="184" y="168" width="32" height="32" fill="#06b6d4"/>
+    <rect x="184" y="200" width="32" height="32" fill="#06b6d4"/>
+    <rect x="184" y="232" width="32" height="32" fill="#06b6d4"/>
+
+    <!-- O piece (yellow) -->
+    <rect x="88" y="168" width="32" height="32" fill="#facc15"/>
+    <rect x="120" y="168" width="32" height="32" fill="#facc15"/>
+    <rect x="88" y="200" width="32" height="32" fill="#facc15"/>
+    <rect x="120" y="200" width="32" height="32" fill="#facc15"/>
+  </g>
+  <!-- Wordmark (simple) -->
+  <g fill="#e2e8f0">
+    <rect x="40" y="8" width="6" height="12" rx="0"/>
+    <text x="52" y="18" font-family="monospace" font-size="14" fill="#e2e8f0" letter-spacing="1">learnly</text>
+  </g>
+</svg>

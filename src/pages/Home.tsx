@@ -137,66 +137,76 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-white">
-      <header className="flex items-center justify-between px-6 py-4">
+    <div className="min-h-screen w-full tetris-grid">
+      <header className="flex items-center justify-between px-6 py-4 text-slate-100">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-slate-900" />
-          <span className="font-bold text-lg tracking-tight">learnly</span>
+          <img src="/learnly.svg" alt="Learnly" className="w-7 h-7" />
+          <span className="font-bold text-2xl tracking-tight">learnly</span>
         </div>
       </header>
 
-      <main className="flex flex-col items-center text-center px-6 pt-10 pb-20">
-        <h1 className="max-w-5xl text-4xl sm:text-6xl font-semibold leading-tight text-slate-900">
+      <main className="flex flex-col items-center text-center px-6 pt-10 pb-20 text-slate-100">
+        <h1 className="max-w-5xl text-6xl sm:text-6xl font-semibold leading-tight text-slate-100">
          Simple, secure video for modern classrooms
         </h1>
-        <p className="mt-4 text-lg text-slate-600 max-w-2xl">
+        <p className="mt-4 text-lg text-slate-300 max-w-2xl">
           Host classes, study groups, and 1:1s with <span className="font-semibold">Learnly</span>.
         </p>
 
         <div className="mt-10 w-full max-w-xl text-left">
-          <div className="flex gap-2 bg-slate-100 rounded-full p-1 w-fit mx-auto">
-            <button onClick={() => setActiveTab('create')} className={`px-4 py-2 rounded-full text-sm ${activeTab==='create' ? 'bg-white shadow' : ''}`}>Create</button>
-            <button onClick={() => setActiveTab('join')} className={`px-4 py-2 rounded-full text-sm ${activeTab==='join' ? 'bg-white shadow' : ''}`}>Join</button>
+          <div className="flex gap-2 bg-slate-900 p-1 w-fit mx-auto">
+            <button
+              onClick={() => setActiveTab('create')}
+              className={`px-4 py-2 text-sm border-2 ${activeTab==='create' ? 'accent-btn' : 'bg-slate-800 border-slate-700 text-slate-200'}`}
+            >
+              Create
+            </button>
+            <button
+              onClick={() => setActiveTab('join')}
+              className={`px-4 py-2 text-sm border-2 ${activeTab==='join' ? 'accent-btn' : 'bg-slate-800 border-slate-700 text-slate-200'}`}
+            >
+              Join
+            </button>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div className="mt-5 border-2 border-slate-700 p-6 shadow-sm bg-slate-900 text-slate-100">
             {activeTab === 'create' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-slate-600">Meeting name</label>
+                  <label className="block text-sm text-slate-300">Meeting name</label>
                   <input
                     value={meetingName}
                     onChange={(e) => setMeetingName(e.target.value)}
                     placeholder="What's your meeting about?"
-                    className="mt-1 w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="mt-1 w-full px-3 py-2 border-2 border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-600">Your name</label>
+                  <label className="block text-sm text-slate-300">Your name</label>
                   <input
                     value={name}
                     onChange={(e) => { setName(e.target.value); localStorage.setItem('learnly:name', e.target.value); }}
                     placeholder="Your display name"
-                    className="mt-1 w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="mt-1 w-full px-3 py-2 border-2 border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-600"
                   />
                 </div>
                 <div>
-                  <button type="button" onClick={() => setShowCreateAdvanced(v => !v)} className="inline-flex items-center gap-1.5 text-sm text-slate-600 underline">
+                  <button type="button" onClick={() => setShowCreateAdvanced(v => !v)} className="inline-flex items-center gap-1.5 text-sm text-slate-300 underline">
                     <Settings className="h-4 w-4" aria-hidden="true" />
                     Advanced
                   </button>
                   {showCreateAdvanced && (
                     <div className="mt-2 grid gap-2">
-                      <label className="block text-sm text-slate-600">Preset</label>
+                      <label className="block text-sm text-slate-300">Preset</label>
                       {presetsLoading ? (
-                        <div className="text-sm text-slate-500">Loading presets…</div>
+                        <div className="text-sm text-slate-400">Loading presets…</div>
                       ) : presetsError ? (
-                        <div className="text-sm text-red-600">{presetsError}</div>
+                        <div className="text-sm text-red-400">{presetsError}</div>
                       ) : (
                         <select
                           value={createPreset}
                           onChange={(e) => setCreatePreset(e.target.value)}
-                          className="w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                          className="w-full px-3 py-2 border-2 border-slate-700 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-600"
                         >
                           {presets.length > 0 ? (
                             presets.map(p => (
@@ -213,31 +223,31 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-                {error && <div className="text-red-600 text-sm">{error}</div>}
-                <button onClick={createNewMeeting} disabled={loading} className="w-full rounded-lg bg-blue-600 text-white font-medium px-4 py-3 disabled:opacity-70">Start Meeting</button>
+                {error && <div className="text-red-400 text-sm">{error}</div>}
+                <button onClick={createNewMeeting} disabled={loading} className="w-full border-2 accent-btn font-medium px-4 py-3 disabled:opacity-70">Start Meeting</button>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-slate-600">Meeting ID</label>
+                  <label className="block text-sm text-slate-300">Meeting ID</label>
                   <input
                     value={meetingCode}
                     onChange={(e) => setMeetingCode(e.target.value)}
                     placeholder="Enter meeting ID"
-                    className="mt-1 w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="mt-1 w-full px-3 py-2 border-2 border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-600">Your name</label>
+                  <label className="block text-sm text-slate-300">Your name</label>
                   <input
                     value={name}
                     onChange={(e) => { setName(e.target.value); localStorage.setItem('learnly:name', e.target.value); }}
                     placeholder="Your display name"
-                    className="mt-1 w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="mt-1 w-full px-3 py-2 border-2 border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-600"
                   />
                 </div>
-                {error && <div className="text-red-600 text-sm">{error}</div>}
-                <button onClick={joinWithCode} disabled={!meetingCode.trim() || loading} className="w-full rounded-lg bg-slate-900 text-white font-medium px-4 py-3 disabled:opacity-50">Join Meeting</button>
+                {error && <div className="text-red-400 text-sm">{error}</div>}
+                <button onClick={joinWithCode} disabled={!meetingCode.trim() || loading} className="w-full border-2 accent-btn font-medium px-4 py-3 disabled:opacity-50">Join Meeting</button>
               </div>
             )}
           </div>

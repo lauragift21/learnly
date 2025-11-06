@@ -2,3 +2,42 @@
 
 html, body, #root { height: 100%; }
 body { background: #ffffff; color: #0f172a; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+:root {
+  /* Pull from RTK UI variables if present, fallback to a reasonable blue */
+  --rtk-accent: var(--rtk-color-primary, #2563eb);
+  --rtk-accent-hover: var(--rtk-color-primary-hover, #1d4ed8);
+}
+
+/* Tetris grid background */
+.tetris-grid {
+  position: relative;
+  background-color: #0b1220; /* slate-950-ish */
+  background-image:
+    linear-gradient(to right, rgba(148,163,184,0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148,163,184,0.15) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px;
+  background-position: 0 0, 0 0;
+  animation: tetris-pan 30s linear infinite;
+}
+
+@keyframes tetris-pan {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 256px 256px, 256px 256px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tetris-grid { animation: none; }
+}
+
+/* Accent button helpers to ensure exact color match */
+.accent-btn {
+  background-color: var(--rtk-accent);
+  border-color: var(--rtk-accent);
+  color: #ffffff;
+  transition: background-color 150ms, border-color 150ms;
+}
+.accent-btn:hover {
+  background-color: var(--rtk-accent-hover);
+  border-color: var(--rtk-accent-hover);
+}
