@@ -12,6 +12,8 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
+		"@cloudflare/realtimekit-react": "^1.1.7",
+		"@cloudflare/realtimekit-react-ui": "^1.0.5",
 		"react": "^19.1.1",
 		"react-dom": "^19.1.1"
 	},

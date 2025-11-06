@@ -1,58 +1,84 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import cloudflareLogo from './assets/Cloudflare_Logo.svg'
-import './App.css'
+import { useEffect } from 'react';
+import { useRealtimeKitClient, RealtimeKitProvider, useRealtimeKitMeeting } from '@cloudflare/realtimekit-react';
+import { RtkMeeting } from '@cloudflare/realtimekit-react-ui';
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [name, setName] = useState('unknown')
+  const [meeting, initMeeting] = useRealtimeKitClient();
 
+  useEffect(() => {
+    const searchParams = new URL(window.location.href).searchParams;
+
+    const authToken = searchParams.get('authToken');
+    const presetName = (import.meta as any).env?.VITE_RTK_PRESET_NAME || 'group-call-host';
+
+    const bootstrap = async () => {
+      try {
+        let token = authToken || '';
+        if (!token) {
+          // 1) Create a meeting
+          const createRes = await fetch('/api/meetings', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ title: 'Class session' })
+          });
+          if (!createRes.ok) throw new Error('Failed to create meeting');
+          const createJson = await createRes.json();
+          const meetingId = createJson?.data?.id;
+          if (!meetingId) throw new Error('Missing meeting id');
+
+          // 2) Issue token
+          const userId = (self.crypto && 'randomUUID' in self.crypto) ? self.crypto.randomUUID() : `${Date.now()}`;
+          const name = `Guest-${userId.slice(0, 6)}`;
+          const tokenRes = await fetch('/api/tokens', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ meetingId, userId, name, presetName })
+          });
+          if (!tokenRes.ok) throw new Error('Failed to issue token');
+          const tokenJson = await tokenRes.json();
+          token = tokenJson?.data?.token;
+          if (!token) throw new Error('Missing token in response');
+
+          // 3) Update URL silently so refresh works
+          const url = new URL(window.location.href);
+          url.searchParams.set('authToken', token);
+          window.history.replaceState({}, '', url.toString());
+        }
+
+        // 4) Initialize meeting
+        initMeeting({
+          authToken: token,
+          defaults: {
+            audio: false,
+            video: false
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        alert('Failed to initialize meeting. Check console for details.');
+      }
+    };
+
+    bootstrap();
+  }, []);
+
+  // By default this component will cover the entire viewport.
+  // To avoid that and to make it fill a parent container, pass the prop:
+  // `mode="fill"` to the component.
   return (
-    <>
-      <div>
-        <a href='https://vite.dev' target='_blank'>
-          <img src={viteLogo} className='logo' alt='Vite logo' />
-        </a>
-        <a href='https://react.dev' target='_blank'>
-          <img src={reactLogo} className='logo react' alt='React logo' />
-        </a>
-        <a href='https://workers.cloudflare.com/' target='_blank'>
-          <img src={cloudflareLogo} className='logo cloudflare' alt='Cloudflare logo' />
-        </a>
-      </div>
-      <h1>Vite + React + Cloudflare</h1>
-      <div className='card'>
-        <button
-          onClick={() => setCount((count) => count + 1)}
-          aria-label='increment'
-        >
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <div className='card'>
-        <button
-          onClick={() => {
-            fetch('/api/')
-              .then((res) => res.json() as Promise<{ name: string }>)
-              .then((data) => setName(data.name))
-          }}
-          aria-label='get name'
-        >
-          Name from API is: {name}
-        </button>
-        <p>
-          Edit <code>worker/index.ts</code> to change the name
-        </p>
-      </div>
-      <p className='read-the-docs'>
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <RealtimeKitProvider value={meeting}>
+      <MyMeetingUI />
+    </RealtimeKitProvider>
   )
 }
 
-export default App
+function MyMeetingUI() {
+  const { meeting } = useRealtimeKitMeeting();
+  return (
+    <div style={{ height: '480px' }}>
+      <RtkMeeting meeting={meeting} showSetupScreen={false} />
+    </div>
+  );
+}
+
+export default App;
