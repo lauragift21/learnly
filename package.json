@@ -14,8 +14,11 @@
 	"dependencies": {
 		"@cloudflare/realtimekit-react": "^1.1.7",
 		"@cloudflare/realtimekit-react-ui": "^1.0.5",
+		"@tailwindcss/vite": "^4.1.16",
 		"react": "^19.1.1",
-		"react-dom": "^19.1.1"
+		"react-dom": "^19.1.1",
+		"react-router-dom": "^7.9.5",
+		"tailwindcss": "^4.1.16"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.13.10",
