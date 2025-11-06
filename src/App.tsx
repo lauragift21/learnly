@@ -6,7 +6,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/meeting" element={<Meeting />} />
+      <Route path="/meeting/:id" element={<Meeting />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

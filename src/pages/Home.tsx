@@ -1,25 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Settings } from 'lucide-react';
 
-function getAuthTokenFromResponse(data: any): string | undefined {
-  return (
-    data?.auth_token ||
-    data?.token ||
-    data?.result?.auth_token ||
-    data?.result?.token ||
-    data?.authToken ||
-    data?.result?.authToken
-  );
+function getAuthTokenFromResponse(data: unknown): string | undefined {
+  const d = data as { auth_token?: string; token?: string };
+  return d?.auth_token ?? d?.token;
 }
 
-function getMeetingIdFromResponse(data: any): string | undefined {
-  return (
-    data?.id ||
-    data?.result?.id ||
-    data?.data?.id ||
-    data?.meeting_id ||
-    data?.result?.meeting_id
-  );
+function getMeetingIdFromResponse(data: unknown): string | undefined {
+  const d = data as { id?: string };
+  return d?.id;
 }
 
 export default function Home() {
@@ -58,14 +48,15 @@ export default function Home() {
         if (items.length && !items.find(p => p.name === createPreset)) {
           setCreatePreset(items[0].name);
         }
-      } catch (e: any) {
-        if (!ignore) setPresetsError(e?.message || 'Failed to load presets');
+      } catch (e: unknown) {
+        const msg = typeof e === 'object' && e && 'message' in e ? String((e as any).message) : 'Failed to load presets';
+        if (!ignore) setPresetsError(msg);
       } finally {
         if (!ignore) setPresetsLoading(false);
       }
     })();
     return () => { ignore = true; };
-  }, []);
+  }, [createPreset]);
 
   async function createNewMeeting() {
     setError(null);
@@ -100,9 +91,13 @@ export default function Home() {
       const authToken = getAuthTokenFromResponse(tokenData);
       if (!authToken) throw new Error('Could not obtain auth token');
 
-      navigate(`/meeting?authToken=${encodeURIComponent(authToken)}`);
-    } catch (err: any) {
-      setError(err?.message || 'Something went wrong');
+      try {
+        sessionStorage.setItem(`rtk:token:${targetMeetingId}`, authToken);
+      } catch { void 0; }
+      navigate(`/meeting/${targetMeetingId}`);
+    } catch (err: unknown) {
+      const msg = typeof err === 'object' && err && 'message' in err ? String((err as any).message) : 'Something went wrong';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -128,9 +123,14 @@ export default function Home() {
       if (!r.ok) throw new Error(tokenData?.details?.error?.message || tokenData?.error || 'Failed to issue token');
       const authToken = getAuthTokenFromResponse(tokenData);
       if (!authToken) throw new Error('Could not obtain auth token');
-      navigate(`/meeting?authToken=${encodeURIComponent(authToken)}`);
-    } catch (err: any) {
-      setError(err?.message || 'Unable to join with that code');
+      const id = meetingCode.trim();
+      try {
+        sessionStorage.setItem(`rtk:token:${id}`, authToken);
+      } catch { void 0; }
+      navigate(`/meeting/${id}`);
+    } catch (err: unknown) {
+      const msg = typeof err === 'object' && err && 'message' in err ? String((err as any).message) : 'Unable to join with that code';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -147,10 +147,10 @@ export default function Home() {
 
       <main className="flex flex-col items-center text-center px-6 pt-10 pb-20">
         <h1 className="max-w-5xl text-4xl sm:text-6xl font-semibold leading-tight text-slate-900">
-          Secure classroom video for everyone
+         Simple, secure video for modern classrooms
         </h1>
         <p className="mt-4 text-lg text-slate-600 max-w-2xl">
-          Teach, learn, and collaborate from anywhere with <span className="font-semibold">learnly</span> — built for modern classrooms.
+          Host classes, study groups, and 1:1s with <span className="font-semibold">Learnly</span>.
         </p>
 
         <div className="mt-10 w-full max-w-xl text-left">
@@ -181,7 +181,8 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <button type="button" onClick={() => setShowCreateAdvanced(v => !v)} className="text-sm text-slate-600 underline">
+                  <button type="button" onClick={() => setShowCreateAdvanced(v => !v)} className="inline-flex items-center gap-1.5 text-sm text-slate-600 underline">
+                    <Settings className="h-4 w-4" aria-hidden="true" />
                     Advanced
                   </button>
                   {showCreateAdvanced && (

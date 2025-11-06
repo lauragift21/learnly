@@ -5,7 +5,7 @@ const json = (data: unknown, init: ResponseInit = {}) =>
   });
 
 export default {
-  async fetch(req: Request, env: Env, _ctx: ExecutionContext) {
+  async fetch(req: Request, env: Env) {
     const url = new URL(req.url);
 
     // APIs
@@ -25,8 +25,12 @@ export default {
   }
 };
 
+type CreateMeetingResponse = { id?: string; result?: { id?: string }; data?: { id?: string } };
+type ErrorShape = unknown;
+
 async function createMeeting(req: Request, env: Env) {
-  const { title = "Class Session" } = await safeJson(req);
+  const bodyIn = await safeJson(req);
+  const title = (bodyIn.title as string) ?? "Class Session";
   const accountId = env.ACCOUNT_ID;
   const appId = env.APP_ID;
   const apiToken = env.CF_API_TOKEN;
@@ -52,17 +56,23 @@ async function createMeeting(req: Request, env: Env) {
     }
   );
   if (!r.ok) {
-    let err: any = {};
-    try { err = await r.json(); } catch {}
+    let err: ErrorShape = null;
+    try { err = await r.json(); } catch { err = null; }
     return json({ error: "Failed to create meeting", details: err }, { status: r.status });
   }
-  const body = await r.json();
-  const id = (body as any)?.result?.id ?? (body as any)?.data?.id ?? (body as any)?.id;
+  const body = (await r.json()) as unknown as CreateMeetingResponse;
+  const id = body.result?.id ?? body.data?.id ?? body.id;
   return json({ id, raw: body });
 }
 
+type IssueTokenResponse = { data?: { token?: string }; token?: string; auth_token?: string };
+
 async function issueToken(req: Request, env: Env) {
-  const { meetingId, userId, name, presetName } = await safeJson(req);
+  const input = await safeJson(req);
+  const meetingId = input.meetingId as string | undefined;
+  const userId = input.userId as string | undefined;
+  const name = input.name as string | undefined;
+  const presetName = input.presetName as string | undefined;
   if (!meetingId || !userId) return json({ error: "meetingId and userId required" }, { status: 400 });
 
   const accountId = env.ACCOUNT_ID;
@@ -90,18 +100,20 @@ async function issueToken(req: Request, env: Env) {
   );
 
   if (!r.ok) {
-    let err: any = {};
-    try { err = await r.json(); } catch {}
+    let err: ErrorShape = null; try { err = await r.json(); } catch { err = null; }
     return json({ error: "Failed to issue token", details: err }, { status: r.status });
   }
-  const body = await r.json();
-  const auth_token = (body as any)?.data?.token;
+  const body = (await r.json()) as unknown as IssueTokenResponse;
+  const auth_token = body.data?.token ?? body.auth_token ?? body.token;
   return json({ auth_token, raw: body });
 }
 
-async function safeJson(req: Request): Promise<any> {
-  try { return await req.json(); } catch { return {}; }
+async function safeJson(req: Request): Promise<Record<string, unknown>> {
+  try { return (await req.json()) as Record<string, unknown>; } catch { return {}; }
 }
+
+type PresetItem = { id?: string; name?: string; preset_id?: string };
+type ListPresetsResponse = { result?: PresetItem[]; data?: PresetItem[] } | PresetItem[];
 
 async function listPresets(env: Env) {
   const accountId = env.ACCOUNT_ID;
@@ -119,13 +131,13 @@ async function listPresets(env: Env) {
     }
   );
   if (!r.ok) {
-    let err: any = {}; try { err = await r.json(); } catch {}
+    let err: ErrorShape = null; try { err = await r.json(); } catch { err = null; }
     return json({ error: "Failed to list presets", details: err }, { status: r.status });
   }
-  const body = await r.json();
-  const items = (body as any)?.result ?? (body as any)?.data ?? body;
+  const body = (await r.json()) as unknown as ListPresetsResponse;
+  const items = (Array.isArray(body) ? body : body.result ?? body.data) ?? [];
   const presets = Array.isArray(items)
-    ? items.map((p: any) => ({ id: p.id ?? p.preset_id ?? p.name, name: p.name ?? p.id }))
+    ? items.map((p) => ({ id: p.id ?? p.preset_id ?? p.name!, name: p.name ?? p.id! }))
     : [];
   return json({ presets, raw: body });
 }
