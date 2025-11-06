@@ -2,16 +2,36 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function getAuthTokenFromResponse(data: any): string | undefined {
-  return data?.auth_token || data?.result?.auth_token || data?.authToken || data?.result?.authToken;
+  return (
+    data?.auth_token ||
+    data?.token ||
+    data?.result?.auth_token ||
+    data?.result?.token ||
+    data?.authToken ||
+    data?.result?.authToken
+  );
 }
 
 function getMeetingIdFromResponse(data: any): string | undefined {
-  return data?.id || data?.result?.id || data?.meeting_id || data?.result?.meeting_id;
+  return (
+    data?.id ||
+    data?.result?.id ||
+    data?.data?.id ||
+    data?.meeting_id ||
+    data?.result?.meeting_id
+  );
 }
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
   const [name, setName] = useState('');
   const [meetingCode, setMeetingCode] = useState('');
+  const [meetingName, setMeetingName] = useState('');
+  const [createPreset, setCreatePreset] = useState('group_call_participant');
+  const [showCreateAdvanced, setShowCreateAdvanced] = useState(false);
+  const [presets, setPresets] = useState<{ id: string; name: string }[]>([]);
+  const [presetsLoading, setPresetsLoading] = useState(false);
+  const [presetsError, setPresetsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -19,6 +39,32 @@ export default function Home() {
   useEffect(() => {
     const cached = localStorage.getItem('learnly:name');
     if (cached) setName(cached);
+  }, []);
+
+  // Load available presets for the Create Advanced selector
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        setPresetsLoading(true);
+        setPresetsError(null);
+        const r = await fetch('/api/presets');
+        const data = await r.json();
+        if (!r.ok) throw new Error(data?.error || 'Failed to load presets');
+        if (ignore) return;
+        const items: { id: string; name: string }[] = Array.isArray(data?.presets) ? data.presets : [];
+        setPresets(items);
+        // If a host preset exists, keep current selection; otherwise default safely to first available
+        if (items.length && !items.find(p => p.name === createPreset)) {
+          setCreatePreset(items[0].name);
+        }
+      } catch (e: any) {
+        if (!ignore) setPresetsError(e?.message || 'Failed to load presets');
+      } finally {
+        if (!ignore) setPresetsLoading(false);
+      }
+    })();
+    return () => { ignore = true; };
   }, []);
 
   async function createNewMeeting() {
@@ -30,7 +76,7 @@ export default function Home() {
       const r = await fetch('/api/meetings', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: 'Learnly class' })
+        body: JSON.stringify({ title: meetingName || 'Learnly class' })
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data?.error || 'Failed to create meeting');
@@ -44,10 +90,13 @@ export default function Home() {
           meetingId: targetMeetingId,
           userId,
           name: name || 'Guest',
+          presetName: createPreset,
         })
       });
       const tokenData = await r2.json();
-      if (!r2.ok) throw new Error(tokenData?.error || 'Failed to issue token');
+      console.log(tokenData);
+      console.log(r2);
+      if (!r2.ok) throw new Error(tokenData?.details?.error?.message || tokenData?.error || 'Failed to issue token');
       const authToken = getAuthTokenFromResponse(tokenData);
       if (!authToken) throw new Error('Could not obtain auth token');
 
@@ -72,10 +121,11 @@ export default function Home() {
           meetingId: meetingCode.trim(),
           userId,
           name: name || 'Guest',
+          presetName: 'group_call_participant',
         })
       });
       const tokenData = await r.json();
-      if (!r.ok) throw new Error(tokenData?.error || 'Failed to issue token');
+      if (!r.ok) throw new Error(tokenData?.details?.error?.message || tokenData?.error || 'Failed to issue token');
       const authToken = getAuthTokenFromResponse(tokenData);
       if (!authToken) throw new Error('Could not obtain auth token');
       navigate(`/meeting?authToken=${encodeURIComponent(authToken)}`);
@@ -100,62 +150,97 @@ export default function Home() {
           Secure classroom video for everyone
         </h1>
         <p className="mt-4 text-lg text-slate-600 max-w-2xl">
-          Connect, collaborate, and teach from anywhere with <span className="font-semibold">learnly</span> —
-          a fast, secure video app built for modern classrooms.
+          Teach, learn, and collaborate from anywhere with <span className="font-semibold">learnly</span> — built for modern classrooms.
         </p>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <button
-            onClick={createNewMeeting}
-            disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 text-white px-5 py-3 font-medium shadow-sm disabled:opacity-70"
-          >
-            <span>New meeting</span>
-          </button>
+        <div className="mt-10 w-full max-w-xl text-left">
+          <div className="flex gap-2 bg-slate-100 rounded-full p-1 w-fit mx-auto">
+            <button onClick={() => setActiveTab('create')} className={`px-4 py-2 rounded-full text-sm ${activeTab==='create' ? 'bg-white shadow' : ''}`}>Create</button>
+            <button onClick={() => setActiveTab('join')} className={`px-4 py-2 rounded-full text-sm ${activeTab==='join' ? 'bg-white shadow' : ''}`}>Join</button>
+          </div>
 
-          <div className="flex items-center rounded-2xl border border-slate-300 overflow-hidden">
-            <span className="pl-3 pr-2 text-slate-500">⌗</span>
-            <input
-              value={meetingCode}
-              onChange={(e) => setMeetingCode(e.target.value)}
-              placeholder="Enter a code or nickname"
-              className="px-3 py-3 w-72 outline-none"
-            />
-            <button
-              onClick={joinWithCode}
-              disabled={!meetingCode.trim() || loading}
-              className="px-4 py-3 text-blue-600 font-medium disabled:text-slate-400"
-            >
-              Join
-            </button>
+          <div className="mt-5 rounded-2xl border border-slate-200 p-6 shadow-sm">
+            {activeTab === 'create' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-slate-600">Meeting name</label>
+                  <input
+                    value={meetingName}
+                    onChange={(e) => setMeetingName(e.target.value)}
+                    placeholder="What's your meeting about?"
+                    className="mt-1 w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-600">Your name</label>
+                  <input
+                    value={name}
+                    onChange={(e) => { setName(e.target.value); localStorage.setItem('learnly:name', e.target.value); }}
+                    placeholder="Your display name"
+                    className="mt-1 w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+                <div>
+                  <button type="button" onClick={() => setShowCreateAdvanced(v => !v)} className="text-sm text-slate-600 underline">
+                    Advanced
+                  </button>
+                  {showCreateAdvanced && (
+                    <div className="mt-2 grid gap-2">
+                      <label className="block text-sm text-slate-600">Preset</label>
+                      {presetsLoading ? (
+                        <div className="text-sm text-slate-500">Loading presets…</div>
+                      ) : presetsError ? (
+                        <div className="text-sm text-red-600">{presetsError}</div>
+                      ) : (
+                        <select
+                          value={createPreset}
+                          onChange={(e) => setCreatePreset(e.target.value)}
+                          className="w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                        >
+                          {presets.length > 0 ? (
+                            presets.map(p => (
+                              <option key={p.id} value={p.name}>{p.name}</option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="group_call_participant">group_call_participant</option>
+                              <option value="group_call_host">group_call_host</option>
+                            </>
+                          )}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {error && <div className="text-red-600 text-sm">{error}</div>}
+                <button onClick={createNewMeeting} disabled={loading} className="w-full rounded-lg bg-blue-600 text-white font-medium px-4 py-3 disabled:opacity-70">Start Meeting</button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-slate-600">Meeting ID</label>
+                  <input
+                    value={meetingCode}
+                    onChange={(e) => setMeetingCode(e.target.value)}
+                    placeholder="Enter meeting ID"
+                    className="mt-1 w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-600">Your name</label>
+                  <input
+                    value={name}
+                    onChange={(e) => { setName(e.target.value); localStorage.setItem('learnly:name', e.target.value); }}
+                    placeholder="Your display name"
+                    className="mt-1 w-full px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+                {error && <div className="text-red-600 text-sm">{error}</div>}
+                <button onClick={joinWithCode} disabled={!meetingCode.trim() || loading} className="w-full rounded-lg bg-slate-900 text-white font-medium px-4 py-3 disabled:opacity-50">Join Meeting</button>
+              </div>
+            )}
           </div>
         </div>
-
-        <div className="mt-10 w-full max-w-5xl border-t border-slate-200" />
-
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 w-full max-w-5xl text-left">
-          <div className="rounded-xl border border-slate-200 p-5">
-            <h3 className="font-semibold text-slate-900">Host engaging lessons</h3>
-            <p className="mt-1 text-slate-600 text-sm">Start a new class in seconds. Share the link and bring students together instantly.</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 p-5">
-            <h3 className="font-semibold text-slate-900">Join with a class code</h3>
-            <p className="mt-1 text-slate-600 text-sm">Enter a class code or nickname to jump into a live session securely.</p>
-          </div>
-        </div>
-
-        {error && <div className="mt-6 text-red-600 text-sm">{error}</div>}
-
-        <div className="mt-6 text-sm text-slate-500">Display name</div>
-        <input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            localStorage.setItem('learnly:name', e.target.value);
-          }}
-          placeholder="Your display name"
-          className="mt-1 px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
-        />
       </main>
     </div>
   );
